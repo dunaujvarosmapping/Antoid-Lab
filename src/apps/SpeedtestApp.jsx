@@ -102,7 +102,7 @@ export function SpeedtestApp() {
             <b>{live.onlineVia}</b>
             <small>
               {live.route === "wifi"
-                ? "TP-Link B440 · Wi-Fi priority route"
+                ? `${state.lab.router.ssid} · Wi-Fi priority route`
                 : activeLine
                   ? `${CARRIERS[activeLine.carrier]?.name} · ${live.networkType}`
                   : "No eligible internet route"}

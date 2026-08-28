@@ -16,7 +16,7 @@ import {
 import { hardwareCapabilities } from "./hardware.js";
 import { FM_COMPOSITIONS, compositionFrame } from "./fmAudio.js";
 
-describe("Antoid Lab 4.0.0 FM regression", () => {
+describe("Antoid Lab 5.0.0 Public Beta FM regression", () => {
   it("ships all four Hungarian transmitters and eight distinct original songs", () => {
     const transmitters = createFMTransmitters();
     expect(

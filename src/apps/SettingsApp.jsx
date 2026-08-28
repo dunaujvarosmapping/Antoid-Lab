@@ -60,13 +60,23 @@ function WiFiSettings() {
     return true;
   }, !!selected);
   const networks = [
-    ["TP-Link B440", 4],
+    ...(state.lab.router.wifiEnabled && !state.lab.router.hidden
+      ? [
+          [
+            state.lab.router.ssid,
+            Math.max(1, Math.ceil(state.lab.router.conditions.signal / 25)),
+          ],
+        ]
+      : []),
     ...[...state.wifi.names].map((n, i) => [n, 3 - i]),
   ];
   const connect = () => {
-    if (selected !== "TP-Link B440" || password !== "1112") {
+    if (
+      selected !== state.lab.router.ssid ||
+      password !== state.lab.router.password
+    ) {
       setStatus(
-        selected === "TP-Link B440"
+        selected === state.lab.router.ssid
           ? "Incorrect password"
           : "Couldn't connect — incorrect password",
       );
@@ -81,7 +91,7 @@ function WiFiSettings() {
     setStatus("Authenticating…");
     setTimeout(() => setStatus("Obtaining IP address…"), 500);
     setTimeout(() => {
-      dispatch({ type: "WIFI_CONNECTED" });
+      dispatch({ type: "WIFI_CONNECTED", ssid: selected, password });
       setStatus("Connected");
       sound("success");
     }, 1100);
@@ -113,7 +123,7 @@ function WiFiSettings() {
               <b>{name}</b>
               <small>
                 {state.wifi.connected === name
-                  ? "Connected · 192.168.1.24"
+                  ? `Connected · ${state.lab.router.ip.split(".").slice(0, 3).join(".")}.24`
                   : `${bars === 4 ? "Strong" : bars === 3 ? "Medium" : "Weak"} · Secured`}
               </small>
             </div>
@@ -148,9 +158,14 @@ function WiFiSettings() {
       )}
       {state.wifi.connected && (
         <div className="info-card">
-          <b>TP-Link B440</b>
-          <span>IP address 192.168.1.24</span>
-          <span>Security WPA2 · Strong signal</span>
+          <b>{state.wifi.connected}</b>
+          <span>
+            IP address {state.lab.router.ip.split(".").slice(0, 3).join(".")}.24
+          </span>
+          <span>
+            Security {state.lab.router.security} ·{" "}
+            {state.lab.router.wan ? "Internet available" : "No internet"}
+          </span>
           <div>
             <Button onClick={() => dispatch({ type: "WIFI_DISCONNECT" })}>
               Disconnect

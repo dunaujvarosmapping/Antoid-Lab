@@ -12,10 +12,12 @@ import {
   speedtestProfile,
   voiceBearer,
 } from "./core.js";
+import { createRouterState } from "./supcer.js";
 
 const baseState = () => ({
   radio: { wifi: false, mobileData: true, airplane: false },
-  wifi: { connected: null },
+  wifi: { connected: null, credentials: {} },
+  lab: { router: createRouterState() },
   defaults: { data: "physical", calls: "physical" },
   sim: {
     physical: {
@@ -173,7 +175,8 @@ describe("Antoid 1 carrier model", () => {
 
   it("allows VoWiFi at zero bars and in airplane mode", () => {
     const state = baseState();
-    state.wifi.connected = "TP-Link B440";
+    state.wifi.connected = state.lab.router.ssid;
+    state.wifi.credentials[state.lab.router.ssid] = state.lab.router.password;
     state.radio.wifi = true;
     state.radio.airplane = true;
     state.sim.physical.bars = 0;
@@ -190,12 +193,22 @@ describe("Antoid 1 carrier model", () => {
     const state = baseState();
     expect(connectivity(state).route).toBe("cellular");
     state.radio.wifi = true;
-    state.wifi.connected = "TP-Link B440";
+    state.wifi.connected = state.lab.router.ssid;
+    state.wifi.credentials[state.lab.router.ssid] = state.lab.router.password;
     expect(connectivity(state)).toMatchObject({
       route: "wifi",
       onlineVia: "Wi-Fi",
-      bandwidth: 180,
     });
+    expect(connectivity(state).bandwidth).toBeCloseTo(332.64, 4);
+    const normal = connectivity(state);
+    state.lab.router.conditions.congestion = 90;
+    state.lab.router.conditions.noise = 70;
+    const stressed = connectivity(state);
+    expect(stressed.bandwidth).toBeLessThan(normal.bandwidth);
+    expect(stressed.latency).toBeGreaterThan(normal.latency);
+    state.lab.router.bands["5 GHz"] = false;
+    state.lab.router.bands["2.4 GHz"] = false;
+    expect(connectivity(state).route).toBe("cellular");
     state.wifi.connected = null;
     expect(connectivity(state).route).toBe("cellular");
   });

@@ -3,6 +3,7 @@ import { useOS } from "./state/OSContext.jsx";
 import { Modal, Toast } from "./components/UI.jsx";
 import { DeskScene } from "./components/DeskScene.jsx";
 import { AntoidUTVScene, LabWelcome } from "./components/AntoidLab.jsx";
+import { SUPCerScene } from "./components/SUPCerScene.jsx";
 
 class UTVErrorBoundary extends React.Component {
   constructor(props) {
@@ -81,6 +82,7 @@ export default function App() {
           <AntoidUTVScene />
         </UTVErrorBoundary>
       )}
+      {state.lab.activeDevice === "supcer" && <SUPCerScene />}
       <Modal />
       <Toast />
     </div>

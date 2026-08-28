@@ -1,8 +1,8 @@
 {
   "name": "antoid-1",
   "private": true,
-  "version": "4.0.0",
-  "description": "Interactive Antoid smartphone, operating-system, UTV, DVB-T2, Decoder, and DVD simulation.",
+  "version": "5.0.0-beta.1",
+  "description": "Antoid Lab v5 Public Beta: interactive smartphone, UTV, broadcast, physical PC, router, and operating-system simulation.",
   "license": "MIT",
   "keywords": [
     "react",
@@ -10,7 +10,10 @@
     "smartphone",
     "operating-system",
     "dvb-t2",
-    "utv"
+    "utv",
+    "desktop",
+    "pc-simulator",
+    "public-beta"
   ],
   "type": "module",
   "scripts": {

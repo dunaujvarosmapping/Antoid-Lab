@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { createInitialState, migrateState, reducer } from "../state/OSContext.jsx";
+import {
+  createInitialState,
+  migrateState,
+  reducer,
+} from "../state/OSContext.jsx";
 import { batteryModel, cycleHealthCeiling, thermalProfile } from "./battery.js";
 
 const runningState = () => {
@@ -82,20 +86,24 @@ describe("coherent Antoid battery model", () => {
     state = reducer(state, { type: "TICK", now: 9_001_000 });
     expect(state.battery.level).toBeCloseTo(50, 0);
     expect(state.battery.cycles).toBe(0);
-    expect(state.battery.cycleProgress).toBeCloseTo(.5, 1);
+    expect(state.battery.cycleProgress).toBeCloseTo(0.5, 1);
     const healthAfterHalf = state.battery.health;
     state.battery.level = 100;
     state.battery.last = 10_000_000;
     state = reducer(state, { type: "TICK", now: 19_000_000 });
     expect(state.battery.cycles).toBe(1);
-    expect(state.battery.cycleProgress).toBeLessThan(.05);
+    expect(state.battery.cycleProgress).toBeLessThan(0.05);
     expect(state.battery.health).toBeLessThan(healthAfterHalf);
     expect(state.battery.health).toBeGreaterThan(99.9);
   });
 
   it("makes Controller Lab cycle changes affect health and physical condition", () => {
     let state = createInitialState();
-    state = reducer(state, { type: "SET", path: "battery.cycles", value: 1000 });
+    state = reducer(state, {
+      type: "SET",
+      path: "battery.cycles",
+      value: 1000,
+    });
     expect(state.battery.health).toBeCloseTo(cycleHealthCeiling(1000), 6);
     expect(state.hardware.components.battery.condition).toBeLessThan(100);
     expect(batteryModel(state).effectiveCapacityMah).toBeLessThan(4000);
@@ -104,16 +112,25 @@ describe("coherent Antoid battery model", () => {
   it("migrates and persists equivalent-cycle progress and aging diagnostics", () => {
     const state = migrateState({
       schema: 6,
-      battery: { health: 78, cycles: 321.4, agingLoss: 2.3, dischargedThroughputMah: 123456 },
+      battery: {
+        health: 78,
+        cycles: 321.4,
+        agingLoss: 2.3,
+        dischargedThroughputMah: 123456,
+      },
     });
-    expect(state.schema).toBe(8);
+    expect(state.schema).toBe(9);
     expect(state.battery.cycles).toBe(321);
-    expect(state.battery.cycleProgress).toBeCloseTo(.4, 6);
+    expect(state.battery.cycleProgress).toBeCloseTo(0.4, 6);
     expect(state.battery.health).toBe(78);
     expect(state.battery.agingLoss).toBe(2.3);
     expect(state.battery.dischargedThroughputMah).toBe(123456);
     const restarted = migrateState(state);
-    expect(restarted.battery).toMatchObject({ cycles: 321, agingLoss: 2.3, dischargedThroughputMah: 123456 });
-    expect(restarted.battery.cycleProgress).toBeCloseTo(.4, 6);
+    expect(restarted.battery).toMatchObject({
+      cycles: 321,
+      agingLoss: 2.3,
+      dischargedThroughputMah: 123456,
+    });
+    expect(restarted.battery.cycleProgress).toBeCloseTo(0.4, 6);
   });
 });

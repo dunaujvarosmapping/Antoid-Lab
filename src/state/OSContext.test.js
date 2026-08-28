@@ -4,9 +4,9 @@ import { createLabState, dvdReadOutcome } from "../services/lab.js";
 import { createInitialState, migrateState, reducer } from "./OSContext.jsx";
 
 describe("Antoid OS persisted-state migration", () => {
-  it("creates a complete clean 4.0.0 state", () => {
+  it("creates a complete clean 5.0.0 Public Beta state", () => {
     const state = migrateState(null);
-    expect(state.schema).toBe(8);
+    expect(state.schema).toBe(9);
     expect(state.hardware.components.storage).toMatchObject({
       manufacturer: "Genuine",
       type: "UFS 2.0",
@@ -18,6 +18,11 @@ describe("Antoid OS persisted-state migration", () => {
     expect(state.networkLab.module).toBe("Radio");
     expect(state.lab.activeDevice).toBe("welcome");
     expect(state.lab.broadcast.towers).toHaveProperty("budapest");
+    expect(state.lab.router).toMatchObject({
+      ssid: "Antoid Lab",
+      password: "1112",
+    });
+    expect(state.lab.supcer.hardware.ramSlots).toHaveLength(4);
     expect(state.lab.broadcast.fallbackAssignments).toHaveProperty(
       "Telekom:Da Vinci",
     );

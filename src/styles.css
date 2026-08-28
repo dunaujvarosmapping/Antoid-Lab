@@ -9953,7 +9953,7 @@ small {
     font-size: 32px;
   }
 }
-/* Antoid Lab 4.0.0 */
+/* Antoid Lab v5.0.0 Public Beta */
 .lab-welcome,
 .antenna-select,
 .utv-unboxing,
@@ -10053,7 +10053,7 @@ small {
 }
 .lab-device-cards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(260px, 390px));
+  grid-template-columns: repeat(3, minmax(240px, 350px));
   gap: 18px;
   margin: 22px;
 }

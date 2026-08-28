@@ -686,8 +686,37 @@ export function emergencyNetwork(state) {
 
 export function connectivity(state) {
   const caps = hardwareCapabilities(state);
+  const router = state.lab?.router || {
+    ssid: "Antoid Lab",
+    password: "1112",
+    wifiEnabled: true,
+    wan: true,
+    dhcp: true,
+    transmitPower: 100,
+    channelWidth: 80,
+    bands: { "2.4 GHz": true, "5 GHz": true },
+    blocked: [],
+    conditions: {
+      bandwidth: 420,
+      latency: 14,
+      congestion: 10,
+      signal: 88,
+      noise: 4,
+      packetLoss: 0,
+      reliability: 99,
+    },
+  };
+  const routerCredential = state.wifi.credentials?.[router?.ssid];
   const wifiConnected =
-    caps.wifi && state.radio.wifi && state.wifi.connected === "TP-Link B440";
+    caps.wifi &&
+    state.radio.wifi &&
+    router?.wifiEnabled &&
+    (router.bands?.["5 GHz"] || router.bands?.["2.4 GHz"]) &&
+    router?.wan &&
+    router?.dhcp &&
+    !router.blocked?.includes("phone") &&
+    state.wifi.connected === router.ssid &&
+    routerCredential === router.password;
   const preferred = state.defaults.data;
   let quality = lineQuality(state, preferred);
   let key = preferred;
@@ -700,13 +729,51 @@ export function connectivity(state) {
     }
   }
   const cellular = quality.dataEligible;
+  const radioFactor = Math.max(
+    0.02,
+    Math.min(
+      1,
+      (router.conditions.signal / 100) *
+        (router.transmitPower / 100) *
+        (1 - router.conditions.noise / 130) *
+        (1 - router.conditions.congestion / 140),
+    ),
+  );
+  const widthFactor = Math.max(0.25, Math.min(1, router.channelWidth / 80));
   const wifi = {
-    bandwidth: 180 * caps.wifiFactor,
-    upload: 62 * caps.wifiFactor,
-    latency: Math.round(18 / Math.max(0.08, caps.wifiFactor)),
-    jitter: Math.round(3 / Math.max(0.08, caps.wifiFactor)),
-    packetLoss: Math.max(0.1, (1 - caps.wifiFactor) * 24),
-    reliability: Math.round(Math.max(1, 99 * caps.wifiFactor)),
+    bandwidth:
+      router.conditions.bandwidth * caps.wifiFactor * radioFactor * widthFactor,
+    upload: router.conditions.bandwidth * 0.36 * caps.wifiFactor * radioFactor,
+    latency: Math.round(
+      (router.conditions.latency +
+        router.conditions.congestion * 0.35 +
+        router.conditions.noise * 0.2) /
+        Math.max(0.08, caps.wifiFactor * radioFactor),
+    ),
+    jitter: Math.round(
+      (2 +
+        router.conditions.congestion * 0.12 +
+        router.conditions.noise * 0.08) /
+        Math.max(0.08, caps.wifiFactor * radioFactor),
+    ),
+    packetLoss: Math.min(
+      100,
+      Math.max(
+        router.conditions.packetLoss,
+        (1 - caps.wifiFactor * radioFactor) * 24,
+      ),
+    ),
+    reliability: Math.round(
+      Math.max(
+        1,
+        Math.min(
+          router.conditions.reliability,
+          100 - router.conditions.packetLoss,
+        ) *
+          caps.wifiFactor *
+          radioFactor,
+      ),
+    ),
   };
   const active = wifiConnected ? wifi : quality;
   const isOnline = wifiConnected || cellular;
@@ -766,7 +833,14 @@ export function voiceBearer(state, slot = state.defaults.calls) {
   const wifi =
     hardwareCapabilities(state).wifi &&
     state.radio.wifi &&
-    state.wifi.connected === "TP-Link B440";
+    state.lab?.router?.wifiEnabled &&
+    (state.lab?.router?.bands?.["5 GHz"] ||
+      state.lab?.router?.bands?.["2.4 GHz"]) &&
+    state.lab?.router?.wan &&
+    !state.lab?.router?.blocked?.includes("phone") &&
+    state.wifi.connected === state.lab?.router?.ssid &&
+    state.wifi.credentials?.[state.lab?.router?.ssid] ===
+      state.lab?.router?.password;
   const quality = lineQuality(state, key);
   if (
     wifi &&

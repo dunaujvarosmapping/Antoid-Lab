@@ -164,7 +164,7 @@ export function createInitialState() {
   const nums = makeNumbers(),
     wifiNames = randomWifi();
   return {
-    schema: 8,
+    schema: 9,
     deskView: "phone",
     lab: createLabState(),
     maintenance: { active: false, lastRun: null },
@@ -308,7 +308,13 @@ export function createInitialState() {
       silent: false,
       autoRotate: true,
     },
-    wifi: { connected: null, saved: false, names: wifiNames, stage: null },
+    wifi: {
+      connected: null,
+      saved: false,
+      names: wifiNames,
+      stage: null,
+      credentials: {},
+    },
     bluetooth: { paired: [], scanning: false },
     hotspot: {
       ssid: "Antoid 1",
@@ -844,7 +850,7 @@ function merge(base, saved) {
   // recoverable values, but normalize every field used during root rendering.
   for (const key of Object.keys(base))
     if (Array.isArray(base[key])) out[key] = array(saved[key], base[key]);
-  out.schema = 8;
+  out.schema = 9;
   out.lab = migrateLabState(saved.lab);
   delete out.hardware.preview;
   out.screen = {
@@ -1993,21 +1999,28 @@ export function reducer(state, action) {
           : "Cellular service restored.",
       );
     }
-    case "WIFI_CONNECTED":
+    case "WIFI_CONNECTED": {
+      const ssid = action.ssid || state.lab.router.ssid;
+      const subnet = state.lab.router.ip.split(".").slice(0, 3).join(".");
       return notice(
         {
           ...state,
           wifi: {
             ...state.wifi,
-            connected: "TP-Link B440",
+            connected: ssid,
             saved: true,
             stage: null,
+            credentials: {
+              ...(state.wifi.credentials || {}),
+              [ssid]: action.password || state.lab.router.password,
+            },
           },
           radio: { ...state.radio, wifi: true },
         },
         "Wi-Fi connected",
-        "TP-Link B440 • 192.168.1.24",
+        `${ssid} • ${subnet}.24`,
       );
+    }
     case "WIFI_DISCONNECT":
       return {
         ...state,
@@ -2016,7 +2029,13 @@ export function reducer(state, action) {
     case "WIFI_FORGET":
       return {
         ...state,
-        wifi: { ...state.wifi, connected: null, saved: false, stage: null },
+        wifi: {
+          ...state.wifi,
+          connected: null,
+          saved: false,
+          stage: null,
+          credentials: {},
+        },
       };
     case "START_DOWNLOAD":
       if (state.installed.includes(action.id)) return state;

@@ -711,8 +711,9 @@ export function UTVController() {
       {section === "Network" && (
         <div>
           <p>
-            TP-Link B440 remains visible. Antoid 1 hotspot visibility follows
-            the phone’s actual power and hotspot state.
+            {state.lab.router.ssid} follows the shared ANRouter radio, password,
+            DHCP and WAN state. Antoid 1 hotspot visibility follows the phone’s
+            actual power and hotspot state.
           </p>
           <Button onClick={() => set("lab.utv.wifi.connected", null)}>
             Disconnect UTV Wi-Fi

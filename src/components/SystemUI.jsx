@@ -208,12 +208,12 @@ export function SetupAssistant() {
         <div className="setup-card">
           <h3>{state.wifi.connected || "No Wi-Fi connected"}</h3>
           <p>
-            TP-Link B440 · secured · strong signal. Enter its password, or use
-            Continue to skip Wi-Fi.
+            {state.lab.router.ssid} · {state.lab.router.security} · shared
+            ANRouter. Enter its password, or use Continue to skip Wi-Fi.
           </p>
           {!state.wifi.connected && (
             <FormField
-              label="TP-Link B440 password"
+              label={`${state.lab.router.ssid} password`}
               type="password"
               value={wifiPassword}
               onChange={(e) => setWifiPassword(e.target.value)}
@@ -224,7 +224,7 @@ export function SetupAssistant() {
             onClick={() => {
               if (state.wifi.connected)
                 return dispatch({ type: "WIFI_DISCONNECT" });
-              if (wifiPassword !== "1112") {
+              if (wifiPassword !== state.lab.router.password) {
                 set("wifi.stage", "Incorrect password");
                 sound("error");
                 return;
@@ -232,7 +232,11 @@ export function SetupAssistant() {
               set("wifi.stage", "Authenticating…");
               setTimeout(() => set("wifi.stage", "Obtaining IP address…"), 450);
               setTimeout(() => {
-                dispatch({ type: "WIFI_CONNECTED" });
+                dispatch({
+                  type: "WIFI_CONNECTED",
+                  ssid: state.lab.router.ssid,
+                  password: wifiPassword,
+                });
                 sound("success");
               }, 950);
             }}
@@ -612,14 +616,20 @@ export function StatusBar() {
           {state.radio.silent && <span>♩̸</span>}
           {alarmsOn && <span>◷</span>}
           {state.audioAccessories.wiredHeadphonesConnected && <span>♬</span>}
-          {state.battery.extremeSaver ? <span>‼</span> : state.battery.saver && <span>♧</span>}
-          {["Hot", "Very Hot", "Critical"].includes(state.battery.thermalState) && <span>♨</span>}
+          {state.battery.extremeSaver ? (
+            <span>‼</span>
+          ) : (
+            state.battery.saver && <span>♧</span>
+          )}
+          {["Hot", "Very Hot", "Critical"].includes(
+            state.battery.thermalState,
+          ) && <span>♨</span>}
           {state.notifications.length > 0 && <span className="notice-dot" />}
         </span>
         {net.wifiConnected && (
           <span
             className="wifi-status-icon"
-            aria-label="Wi-Fi connected to TP-Link B440"
+            aria-label={`Wi-Fi connected to ${state.wifi.connected}`}
           >
             ⌁
           </span>
@@ -1010,9 +1020,11 @@ function QuickTiles({ compact = false }) {
   ];
   return (
     <div className={`quick-tiles ${compact ? "compact" : ""}`}>
-      {tiles.slice(0, compact ? 4 : tiles.length).map(([name, on, activate, sub, onLongPress]) => (
-        <QuickTile key={name} {...{ name, on, activate, sub, onLongPress }} />
-      ))}
+      {tiles
+        .slice(0, compact ? 4 : tiles.length)
+        .map(([name, on, activate, sub, onLongPress]) => (
+          <QuickTile key={name} {...{ name, on, activate, sub, onLongPress }} />
+        ))}
     </div>
   );
 }
@@ -1020,21 +1032,37 @@ function QuickTiles({ compact = false }) {
 export function AdvancedFlashlight() {
   const { state, set } = useOS();
   const caps = hardwareCapabilities(state);
-  const limit = state.battery.extremeSaver ? 18 : state.battery.saver ? 45 : 100;
+  const limit = state.battery.extremeSaver
+    ? 18
+    : state.battery.saver
+      ? 45
+      : 100;
   const effective = Math.min(state.radio.flashlightBrightness || 80, limit);
   return (
     <SystemOverlay name="flashlight" label="Advanced Flashlight">
       <div className="shade advanced-flashlight app-scroll">
         <header>
-          <div><time>Flashlight</time><span>Physical rear LED control</span></div>
-          <button onClick={() => set("radio.flashlight", !state.radio.flashlight)}>
+          <div>
+            <time>Flashlight</time>
+            <span>Physical rear LED control</span>
+          </div>
+          <button
+            onClick={() => set("radio.flashlight", !state.radio.flashlight)}
+          >
             {state.radio.flashlight ? "Turn off" : "Turn on"}
           </button>
         </header>
-        <div className={`flashlight-preview ${state.radio.flashlight && caps.flashlight ? "on" : ""}`} style={{ "--level": effective / 100 }}>
+        <div
+          className={`flashlight-preview ${state.radio.flashlight && caps.flashlight ? "on" : ""}`}
+          style={{ "--level": effective / 100 }}
+        >
           <i />
           <b>{effective}% effective output</b>
-          <span>{caps.flashlight ? state.radio.flashlightMode : "LED hardware unavailable"}</span>
+          <span>
+            {caps.flashlight
+              ? state.radio.flashlightMode
+              : "LED hardware unavailable"}
+          </span>
         </div>
         <Slider
           label="Brightness"
@@ -1049,13 +1077,35 @@ export function AdvancedFlashlight() {
         />
         <div className="flashlight-details">
           <b>Power authority</b>
-          <span>{caps.flashlight ? "Rear LED installed and operational" : "Rear LED missing or damaged"}</span>
+          <span>
+            {caps.flashlight
+              ? "Rear LED installed and operational"
+              : "Rear LED missing or damaged"}
+          </span>
           <b>Energy policy</b>
-          <span>{state.battery.extremeSaver ? "Extreme Saver caps output at 18%" : state.battery.saver ? "Battery Saver caps output at 45%" : "Full output available"}</span>
+          <span>
+            {state.battery.extremeSaver
+              ? "Extreme Saver caps output at 18%"
+              : state.battery.saver
+                ? "Battery Saver caps output at 45%"
+                : "Full output available"}
+          </span>
           <b>Thermal load</b>
-          <span>{effective > 70 ? "High · sustained use warms the mainboard" : effective > 35 ? "Moderate" : "Low"}</span>
+          <span>
+            {effective > 70
+              ? "High · sustained use warms the mainboard"
+              : effective > 35
+                ? "Moderate"
+                : "Low"}
+          </span>
           <b>Power source</b>
-          <span>{caps.externalPower ? "External USB-C" : caps.battery ? "Battery" : "No available power"}</span>
+          <span>
+            {caps.externalPower
+              ? "External USB-C"
+              : caps.battery
+                ? "Battery"
+                : "No available power"}
+          </span>
         </div>
       </div>
     </SystemOverlay>

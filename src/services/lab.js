@@ -6,12 +6,16 @@ import {
   mergeScanIntoDatabase,
   serviceIdentity,
 } from "./dvb.js";
+import { createRouterState, createSUPCerState } from "./supcer.js";
 
 export function createLabState() {
   return {
     activeDevice: "welcome",
     deviceView: "utv",
     changelogOpen: false,
+    releaseChannel: "public-beta",
+    router: createRouterState(),
+    supcer: createSUPCerState(),
     antenna: { selected: null, position: 12, unpacked: false },
     unboxing: { complete: false, stage: 0 },
     cables: {
@@ -392,7 +396,123 @@ export function migrateLabState(saved) {
     base.dvd.availableDiscs,
   );
   lab.dvd.settings = { ...base.dvd.settings, ...object(source.dvd?.settings) };
-  if (!["welcome", "phone", "utv"].includes(lab.activeDevice))
+  lab.router = {
+    ...base.router,
+    ...object(source.router),
+    bands: { ...base.router.bands, ...object(source.router?.bands) },
+    guest: { ...base.router.guest, ...object(source.router?.guest) },
+    conditions: {
+      ...base.router.conditions,
+      ...object(source.router?.conditions),
+    },
+    blocked: array(source.router?.blocked, base.router.blocked),
+    clientNames: {
+      ...base.router.clientNames,
+      ...object(source.router?.clientNames),
+    },
+  };
+  lab.supcer = {
+    ...base.supcer,
+    ...object(source.supcer),
+    cables: { ...base.supcer.cables, ...object(source.supcer?.cables) },
+    monitor: { ...base.supcer.monitor, ...object(source.supcer?.monitor) },
+    hardware: {
+      ...base.supcer.hardware,
+      ...object(source.supcer?.hardware),
+      ramSlots: array(
+        source.supcer?.hardware?.ramSlots,
+        base.supcer.hardware.ramSlots,
+      ).slice(0, 4),
+      fans: {
+        ...base.supcer.hardware.fans,
+        ...object(source.supcer?.hardware?.fans),
+      },
+    },
+    latches: {
+      ...base.supcer.latches,
+      ...object(source.supcer?.latches),
+      ram: array(source.supcer?.latches?.ram, base.supcer.latches.ram).slice(
+        0,
+        4,
+      ),
+    },
+    bios: { ...base.supcer.bios, ...object(source.supcer?.bios) },
+    conditions: {
+      ...base.supcer.conditions,
+      ...object(source.supcer?.conditions),
+    },
+    inventory: array(source.supcer?.inventory, base.supcer.inventory),
+    network: {
+      ...base.supcer.network,
+      ...object(source.supcer?.network),
+      remembered: {
+        ...base.supcer.network.remembered,
+        ...object(source.supcer?.network?.remembered),
+      },
+    },
+    desktop: {
+      ...base.supcer.desktop,
+      ...object(source.supcer?.desktop),
+      windows: array(
+        source.supcer?.desktop?.windows,
+        base.supcer.desktop.windows,
+      ),
+      notifications: array(
+        source.supcer?.desktop?.notifications,
+        base.supcer.desktop.notifications,
+      ),
+    },
+    filesystem: {
+      ...base.supcer.filesystem,
+      ...object(source.supcer?.filesystem),
+      items: array(
+        source.supcer?.filesystem?.items,
+        base.supcer.filesystem.items,
+      ),
+      recycle: array(
+        source.supcer?.filesystem?.recycle,
+        base.supcer.filesystem.recycle,
+      ),
+    },
+    installedApps: array(
+      source.supcer?.installedApps,
+      base.supcer.installedApps,
+    ),
+    installedPackages: {
+      ...base.supcer.installedPackages,
+      ...object(source.supcer?.installedPackages),
+    },
+    fileAssociations: {
+      ...base.supcer.fileAssociations,
+      ...object(source.supcer?.fileAssociations),
+    },
+    browser: {
+      ...base.supcer.browser,
+      ...object(source.supcer?.browser),
+      tabs: array(source.supcer?.browser?.tabs, base.supcer.browser.tabs),
+      bookmarks: array(
+        source.supcer?.browser?.bookmarks,
+        base.supcer.browser.bookmarks,
+      ),
+      downloads: array(
+        source.supcer?.browser?.downloads,
+        base.supcer.browser.downloads,
+      ),
+    },
+    paint: { ...base.supcer.paint, ...object(source.supcer?.paint) },
+    textEditor: {
+      ...base.supcer.textEditor,
+      ...object(source.supcer?.textEditor),
+    },
+    media: { ...base.supcer.media, ...object(source.supcer?.media) },
+    calculator: {
+      ...base.supcer.calculator,
+      ...object(source.supcer?.calculator),
+    },
+    game: { ...base.supcer.game, ...object(source.supcer?.game) },
+    pairs: { ...base.supcer.pairs, ...object(source.supcer?.pairs) },
+  };
+  if (!["welcome", "phone", "utv", "supcer"].includes(lab.activeDevice))
     lab.activeDevice = "welcome";
   return lab;
 }

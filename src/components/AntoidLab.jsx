@@ -32,8 +32,18 @@ const pageLabels = {
 const nowTime = () =>
   new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 const utvInternet = (state) => {
-  if (state.lab.cables.ethernetToUtv) return true;
-  if (state.lab.utv.wifi.connected === "TP-Link B440") return true;
+  if (state.lab.router.blocked.includes("utv") || !state.lab.router.dhcp)
+    return false;
+  if (state.lab.cables.ethernetToUtv && state.lab.router.wan) return true;
+  if (
+    state.lab.utv.wifi.connected === state.lab.router.ssid &&
+    state.lab.utv.wifi.remembered?.[state.lab.router.ssid] ===
+      state.lab.router.password &&
+    state.lab.router.wifiEnabled &&
+    (state.lab.router.bands["5 GHz"] || state.lab.router.bands["2.4 GHz"]) &&
+    state.lab.router.wan
+  )
+    return true;
   return (
     state.lab.utv.wifi.connected === (state.hotspot.ssid || "Antoid 1") &&
     state.radio.hotspot &&
@@ -52,7 +62,7 @@ export function LabWelcome() {
         <i />
         <span>A</span>
       </div>
-      <p className="eyebrow">ANTO ID LAB · 4.0.0</p>
+      <p className="eyebrow">ANTOID LAB · v5.0.0 PUBLIC BETA</p>
       <h1>Welcome to the Antoid Lab!</h1>
       <p>Select Device to test:</p>
       <div className="lab-device-cards">
@@ -65,6 +75,11 @@ export function LabWelcome() {
           <b>Antoid UTV 1</b>
           <span>Smart TV, DVB-T2, Decoder and DVD environment</span>
           <em>Open TV Lab →</em>
+        </button>
+        <button onClick={() => set("lab.activeDevice", "supcer")}>
+          <b>Antoid SUPCer</b>
+          <span>Physical PC, ANRouter and Antoid OS 7 environment</span>
+          <em>Open PC Lab →</em>
         </button>
       </div>
       <button
@@ -91,30 +106,30 @@ function Changelog() {
           ×
         </button>
         <p className="eyebrow">UPDATE CHANGELOG</p>
-        <h2>Version 4.0.0</h2>
-        <h3>Antoid Lab &amp; UTV Update</h3>
+        <h2>v5.0.0 Public Beta</h2>
+        <h3>SUPCer, Antoid OS 7 &amp; Shared Network Update</h3>
         <div className="changelog-grid">
           <article>
             <b>NEW FEATURES</b>
             <p>
-              Antoid Lab, UTV 1, four-site DVB-T2, canonical MUX A–E, Decoder
-              cards, DVD playback, physical cables, scanning, EPG and
-              cross-device hotspot.
+              Antoid SUPCer with physical components and cables, POST and BIOS,
+              Antoid OS 7 desktop, persistent files, apps, games, package
+              installer, and the shared ANRouter network.
             </p>
           </article>
           <article>
             <b>IMPROVEMENTS</b>
             <p>
-              Shared world state, exact-frequency tuning, digital RF
-              degradation, independent towers, persistent channel databases and
-              connected diagnostics.
+              Expanded persistent Lab state, hardware-aware startup and display
+              routing, real window management, router administration, parts
+              inventory, diagnostics and public-beta migrations.
             </p>
           </article>
           <article>
             <b>BUG FIXES</b>
             <p>
-              Distinct FM programmes, effective battery health, thermal/cycle
-              behavior and internet-gated Street Lamp purchases.
+              Legacy state now migrates safely into the 5.0 data model while
+              preserving the existing phone, UTV, Decoder, DVD and RF systems.
             </p>
           </article>
         </div>
@@ -445,7 +460,7 @@ function UTVSetupBench({ firstPower = false }) {
         </button>
         <div>
           <b>ANTO ID LAB</b>
-          <span>Antoid UTV 1 setup workspace · 4.0.0</span>
+          <span>Antoid UTV 1 setup workspace · v5.0.0 Public Beta</span>
         </div>
         <span className="utv-setup-progress">
           {firstPower
@@ -500,7 +515,17 @@ function WifiPanel({ compact = false }) {
   const phoneNetwork = connectivity(state);
   const hotspotVisible = state.radio.hotspot && state.power.mode === "on";
   const networks = [
-    { ssid: "TP-Link B440", password: "1112", internet: true },
+    ...(state.lab.router.wifiEnabled &&
+    !state.lab.router.hidden &&
+    (state.lab.router.bands["5 GHz"] || state.lab.router.bands["2.4 GHz"])
+      ? [
+          {
+            ssid: state.lab.router.ssid,
+            password: state.lab.router.password,
+            internet: state.lab.router.wan,
+          },
+        ]
+      : []),
     ...(hotspotVisible
       ? [
           {
@@ -530,7 +555,14 @@ function WifiPanel({ compact = false }) {
     dispatch({ type: "TOAST", message: `${network.ssid} connected` });
   };
   const connectedInternet =
-    connected === "TP-Link B440" ||
+    (connected === state.lab.router.ssid &&
+      state.lab.utv.wifi.remembered?.[state.lab.router.ssid] ===
+        state.lab.router.password &&
+      state.lab.router.wifiEnabled &&
+      (state.lab.router.bands["5 GHz"] || state.lab.router.bands["2.4 GHz"]) &&
+      state.lab.router.wan &&
+      state.lab.router.dhcp &&
+      !state.lab.router.blocked.includes("utv")) ||
     (connected === (state.hotspot.ssid || "Antoid 1") &&
       hotspotVisible &&
       phoneNetwork.isOnline);
@@ -3439,7 +3471,7 @@ function UTVBench() {
         </button>
         <div>
           <b>ANTO ID LAB</b>
-          <span>Shared physical world · 4.0.0</span>
+          <span>Shared physical world · v5.0.0 Public Beta</span>
         </div>
         <button onClick={() => dispatch({ type: "LAB_REPACK" })}>
           Reset / repack Lab
